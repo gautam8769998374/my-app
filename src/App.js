@@ -1,25 +1,70 @@
-import logo from './logo.svg';
-import './App.css';
+import React, {useEffect, useState} from 'react'
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import Dropdown from './components/Dropdown1';
+import Table from './components/Table1';
+
+const url = 'https://swapi.dev/api';
+
+export default function App() {
+    const [data, setData] = useState([]);
+    const [people, setPeople] = useState();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchPeople = async (selectedPlanet) => {
+        setIsLoading(true);
+        const residentsData = await Promise.all(
+            selectedPlanet.residents.map(async (residentURL) => {
+                const residentResponse = await fetch(residentURL);
+                const residentData = await residentResponse.json();
+
+                return residentData;
+            })
+        );
+        setIsLoading(false);
+        console.log(residentsData)
+        setPeople(residentsData);
+    };
+
+    useEffect(() => {
+        setIsLoading(true);
+        fetch(`${url}/planets`)
+        .then(response => {
+            setIsLoading(false);
+            if (response.status !== 200) {
+                throw new Error('Bad response from server');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            setData(data.results);
+        });
+    }, []);
+
+    return (
+        <Container>
+            <Box
+                component="form"
+                sx={{
+                '& > :not(style)': { m: 3, width: '100ch' },
+                }}
+                noValidate
+                autoComplete="off"
+            >
+                <Dropdown label="Planet Name" values={data} setSelctedValue={(selectedPlanet) => { fetchPeople(selectedPlanet);}}/>
+                {
+                    isLoading ? <Box sx={{ display: 'flex' }}>
+                                    <CircularProgress />
+                                </Box> 
+                                : people === undefined 
+                                    ? <Box sx={{ display: 'flex' }}>Please select planet to display list of poele.</Box> 
+                                    : <Table rows={people}/>
+                }
+                
+            </Box>
+        </Container>
+    )
 }
-
-export default App;
